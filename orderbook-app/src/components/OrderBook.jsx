@@ -3,7 +3,7 @@ import { OrderBookRow } from './OrderBookRow';
 import { buildLevels, TICK_OPTIONS } from '../lib/levels';
 import { formatPrice } from '../lib/format';
 
-const DEPTH = 25;
+const DEPTH = 20;
 
 export function OrderBook({ book, baseAsset = 'BTC', quoteAsset = 'USDT' }) {
   const [tickSize, setTickSize] = useState(TICK_OPTIONS[0]);

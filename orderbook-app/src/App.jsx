@@ -38,7 +38,7 @@ export default function App() {
       <p className="footnote">
         Live data from Binance public market streams (depth@100ms), synced
         against a REST snapshot per Binance's local order-book
-        procedure. 25 levels per side. "Total" is the cumulative BTC
+        procedure. 20 levels per side. "Total" is the cumulative BTC
         amount from the best price out to that row, matching Binance's
         own order book convention.
       </p>
