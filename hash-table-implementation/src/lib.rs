@@ -5,7 +5,7 @@ mod hash_table;
 pub fn run() -> () {
     let _words = extract_words_from_txt_file("https://www.gutenberg.org/files/98/98-0.txt");
 
-    let mut hash_table = hash_table::HashTable::new();
+    let mut hash_table = hash_table::HashTable::new(130000);
     hash_table.insert("test1", 1);
     hash_table.insert("test2", 2);
     hash_table.insert("test3", -3);
@@ -33,7 +33,7 @@ pub fn run() -> () {
 // TODO: reduce the amount of allocations
 // TODO: determine how to remove the apostrophe character (') correctly.
 
-fn extract_words_from_txt_file(url: &str) -> Vec<String> // I am assuming I am not allowed to use a hash set from the standard library.
+fn extract_words_from_txt_file(url: &str) -> Vec<String>
 {
     let response_body = reqwest::blocking::get(url).expect("Get request failed.");
     let text_content = response_body.text().expect("Couldn't extract words from response body.");
