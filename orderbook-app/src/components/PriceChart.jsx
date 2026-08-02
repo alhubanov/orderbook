@@ -82,6 +82,11 @@ export function PriceChart({ symbol = 'btcusdt', baseAsset = 'BTC' }) {
         textColor: TEXT_MUTED,
         fontFamily: "'Roboto Mono', ui-monospace, monospace",
         fontSize: 11,
+        // The on-chart logo is only one way to satisfy lightweight-charts'
+        // attribution requirement. It's off here because the required NOTICE
+        // text and tradingview.com link are carried in the page footnote
+        // instead - if that footnote goes, this has to come back.
+        attributionLogo: false,
       },
       // Hairline, solid gridlines one shade off the surface - dashed grids read
       // as thresholds rather than chrome.

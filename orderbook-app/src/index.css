@@ -289,6 +289,26 @@ select {
   margin-bottom: 12px;
 }
 
+/* Required attribution for lightweight-charts - kept visible, not hidden. */
+.attribution {
+  max-width: var(--content-max);
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  padding: 0 4px;
+}
+
+.attribution a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+
+.attribution a:hover {
+  color: var(--text-primary);
+}
+
 .footnote {
   max-width: var(--content-max);
   width: 100%;

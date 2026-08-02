@@ -48,6 +48,18 @@ export default function App() {
         kline stream for the selected interval; hover (or touch) the chart to
         read exact OHLC values.
       </p>
+
+      {/* Required attribution for lightweight-charts (Apache-2.0 + NOTICE).
+          The on-chart logo is disabled, so this notice and link are what
+          satisfy the license - do not remove without re-enabling
+          layout.attributionLogo in PriceChart. */}
+      <p className="attribution">
+        Charts by{' '}
+        <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
+          TradingView
+        </a>{' '}
+        — Lightweight Charts™, Copyright © 2025 TradingView, Inc.
+      </p>
     </div>
   );
 }
