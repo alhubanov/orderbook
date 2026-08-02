@@ -14,7 +14,7 @@ const STATUS_LABEL = {
 };
 
 export default function App() {
-  const { status, book, lastError } = useOrderBook(SYMBOL, { updateSpeed: '100ms' });
+  const { status, book, lastError } = useOrderBook(SYMBOL, { updateSpeed: '1000ms' });
   const dotClass = status === STATUS.SYNCED ? 'synced' : status === STATUS.ERROR ? 'error' : status;
 
   return (
@@ -36,7 +36,7 @@ export default function App() {
       <OrderBook book={book} baseAsset="BTC" quoteAsset="USDT" />
 
       <p className="footnote">
-        Live data from Binance public market streams (depth@100ms), synced
+        Live data from Binance public market streams (depth, 1000ms), synced
         against a REST snapshot per Binance's local order-book
         procedure. 20 levels per side. "Total" is the cumulative BTC
         amount from the best price out to that row, matching Binance's

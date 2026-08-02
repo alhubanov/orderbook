@@ -1,0 +1,57 @@
+name: Deploy order book to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'orderbook-app/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it midway, but only keep
+# one queued behind it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: orderbook-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: orderbook-app/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      # `path` is resolved from the workspace root, not the job's
+      # working-directory (that only applies to `run` steps).
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: orderbook-app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

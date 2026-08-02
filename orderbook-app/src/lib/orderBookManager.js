@@ -7,7 +7,7 @@
  * (Diff. Depth Stream) combined with the REST /api/v3/depth snapshot.
  *
  * Algorithm (paraphrased from Binance's docs):
- *  1. Open a websocket to {symbol}@depth@100ms and buffer every event.
+ *  1. Open a websocket to {symbol}@depth (1000ms) and buffer every event.
  *  2. Fetch a REST snapshot (GET /api/v3/depth) to get lastUpdateId + book.
  *  3. Discard any buffered event whose final update id (u) <= lastUpdateId.
  *  4. The first event applied must satisfy U <= lastUpdateId+1 <= u.
@@ -38,7 +38,7 @@ export class OrderBookManager {
     this.symbol = symbol.toLowerCase();
     this.restBase = opts.restBase || DEFAULT_REST_BASE;
     this.wsBase = opts.wsBase || DEFAULT_WS_BASE;
-    this.updateSpeed = opts.updateSpeed || '100ms'; // '100ms' or '' (1000ms)
+    this.updateSpeed = opts.updateSpeed || '1000ms'; // '1000ms' or '100ms'
     this.depthLimit = opts.depthLimit || 1000; // REST snapshot depth
 
     this.bids = new Map(); // price(number) -> qty(number)
@@ -88,7 +88,9 @@ export class OrderBookManager {
     this.lastUpdateId = null;
     this.prevFinalUpdateId = null;
 
-    const speedSuffix = this.updateSpeed ? `@${this.updateSpeed}` : '';
+    // Binance names the 1000ms diff stream `<symbol>@depth` with no suffix;
+    // only the 100ms variant carries one.
+    const speedSuffix = this.updateSpeed === '100ms' ? '@100ms' : '';
     const streamUrl = `${this.wsBase}/ws/${this.symbol}@depth${speedSuffix}`;
 
     try {
@@ -157,7 +159,7 @@ export class OrderBookManager {
 
       if (firstIdx > -1) {
         for (let i = firstIdx; i < this.buffer.length; i++) {
-          this._applyEvent(this.buffer[i], true);
+          this._applyEvent(this.buffer[i]);
         }
       }
       this.buffer = [];
@@ -170,15 +172,24 @@ export class OrderBookManager {
     }
   }
 
-  _applyEvent(evt, isFirstBridgingEvent = false) {
+  _applyEvent(evt) {
     if (evt.e !== 'depthUpdate') return;
 
-    if (!isFirstBridgingEvent && this.prevFinalUpdateId != null) {
-      if (evt.U !== this.prevFinalUpdateId + 1) {
-        // Gap detected: stream out of sync with local book, must resync.
+    if (this.prevFinalUpdateId == null) {
+      // Nothing applied since the snapshot yet. Whether this event came out of
+      // the buffer or straight off the wire (the buffer is legitimately empty
+      // when the snapshot lands between two events), it must straddle
+      // lastUpdateId + 1 or we've missed updates and the book would silently
+      // diverge for the rest of the session.
+      if (evt.u <= this.lastUpdateId) return; // already covered by the snapshot
+      if (!(evt.U <= this.lastUpdateId + 1 && evt.u >= this.lastUpdateId + 1)) {
         this._scheduleReconnect();
         return;
       }
+    } else if (evt.U !== this.prevFinalUpdateId + 1) {
+      // Gap detected: stream out of sync with local book, must resync.
+      this._scheduleReconnect();
+      return;
     }
 
     for (const [priceStr, qtyStr] of evt.b) {
