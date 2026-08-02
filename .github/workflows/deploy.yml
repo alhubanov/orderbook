@@ -28,17 +28,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Runs before the build so a Pages misconfiguration fails in seconds
+      # rather than after npm ci. `enablement` turns Pages on for the repo if
+      # it isn't already, so no manual Settings step is needed.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: orderbook-app/package-lock.json
 
       - run: npm ci
 
       - run: npm run build
-
-      - uses: actions/configure-pages@v5
 
       # `path` is resolved from the workspace root, not the job's
       # working-directory (that only applies to `run` steps).
