@@ -1,5 +1,6 @@
 import { useOrderBook } from './hooks/useOrderBook';
 import { OrderBook } from './components/OrderBook';
+import { PriceChart } from './components/PriceChart';
 import { STATUS } from './lib/orderBookManager';
 
 const SYMBOL = 'btcusdt';
@@ -33,14 +34,19 @@ export default function App() {
         <div className="error-banner">Connection issue: {lastError} — retrying…</div>
       )}
 
-      <OrderBook book={book} baseAsset="BTC" quoteAsset="USDT" />
+      <div className="layout">
+        <PriceChart symbol={SYMBOL} baseAsset="BTC" />
+        <OrderBook book={book} baseAsset="BTC" quoteAsset="USDT" />
+      </div>
 
       <p className="footnote">
         Live data from Binance public market streams (depth, 1000ms), synced
         against a REST snapshot per Binance's local order-book
         procedure. 20 levels per side. "Total" is the cumulative BTC
         amount from the best price out to that row, matching Binance's
-        own order book convention.
+        own order book convention. Candles come from /api/v3/klines plus the
+        kline stream for the selected interval; hover (or touch) the chart to
+        read exact OHLC values.
       </p>
     </div>
   );
