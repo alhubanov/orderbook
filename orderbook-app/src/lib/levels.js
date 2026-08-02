@@ -25,20 +25,33 @@ export function buildLevels(entries, { side, tickSize, depth }) {
   }));
 }
 
+/**
+ * BTCUSDT's PRICE_FILTER tickSize is 0.01, so every price Binance can quote
+ * is a whole number of cents. Scaling by this before any rounding keeps the
+ * bucketing in exact integer arithmetic.
+ */
+const PRICE_SCALE = 100;
+
 function groupByTick(entries, tickSize, side) {
   if (!tickSize || tickSize <= 0) return entries;
 
-  const buckets = new Map();
+  // Bucket in integer tick units rather than floats. `Math.floor(p / tickSize)`
+  // lands on the wrong side of a boundary for ~15% of realistic BTC prices
+  // (60000.09 / 0.01 === 6000008.999...), which drags a level a whole cent off
+  // its true price and merges it into its neighbour.
+  const tickUnits = Math.round(tickSize * PRICE_SCALE);
+
+  const buckets = new Map(); // integer tick units -> qty
   for (const [price, qty] of entries) {
-    const bucketPrice =
+    const priceUnits = Math.round(price * PRICE_SCALE);
+    const bucketUnits =
       side === 'bid'
-        ? Math.floor(price / tickSize) * tickSize
-        : Math.ceil(price / tickSize) * tickSize;
-    const roundedKey = Number(bucketPrice.toFixed(8));
-    buckets.set(roundedKey, (buckets.get(roundedKey) || 0) + qty);
+        ? Math.floor(priceUnits / tickUnits) * tickUnits
+        : Math.ceil(priceUnits / tickUnits) * tickUnits;
+    buckets.set(bucketUnits, (buckets.get(bucketUnits) || 0) + qty);
   }
 
-  const result = [...buckets.entries()];
+  const result = [...buckets.entries()].map(([units, qty]) => [units / PRICE_SCALE, qty]);
   result.sort((a, b) => (side === 'bid' ? b[0] - a[0] : a[0] - b[0]));
   return result;
 }
