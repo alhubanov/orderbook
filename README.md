@@ -21,7 +21,7 @@ With this, the implementation covers the requirements. Some things can be optimi
 
 ## Orderbook
 
-To build the orderbook, I used Claude Code in VS Code using Claude Opus 5. I instructed it to utilize React as a framework. I instructed it to create only the orderbook first using the binance page as a reference. I told it to feature 20 levels and the same update frequency of the binance page. It built it correctly using React + Vite. It used the live data from the binance API endpoints. Then, I instructed it to add a chart and it did so using the trading view library. 
+To build the orderbook, I used Claude Code in VS Code using Claude Opus 5. I instructed it to utilize React as a framework. I instructed it to create only the orderbook first using the binance page as a reference. I told it to feature 20 levels for bid and for ask. It built it correctly using React + Vite. It used the live data from the binance API endpoints. Then, I instructed it to add a chart and it did so using the trading view library. 
 
 A dev version can be run like so:
 
