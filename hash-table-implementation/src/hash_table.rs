@@ -1,9 +1,35 @@
 use std::{collections::VecDeque};
+
+// TODO: fix/implement the derivations
+#[derive(Clone, PartialEq, Debug)]
+struct Entry<'a> 
+{
+    key: &'a str,
+    value: isize
+}
+
+impl<'a> Entry<'a>
+{
+    fn create(key: &'a str, value: isize) -> Self
+    {
+        Entry { key, value }
+    }
+    
+    fn get_key(&self) -> &'a str
+    {
+        self.key
+    }
+
+    fn get_value(&self) -> isize
+    {
+        self.value
+    }
+}
+
 pub struct HashTable<'a> 
 {
     capacity: usize,
-    keys: Vec<Option<&'a str>>,
-    values: Vec<Option<isize>>,
+    key_value_pairs: Vec<Option<Entry<'a>>>,
     update_history: VecDeque<(&'a str, isize)>
 }
 
@@ -11,17 +37,13 @@ impl<'a> HashTable<'a>
 {
     pub fn new(capacity: usize) -> Self
     {
-        let mut keys : Vec<Option<&'a str>> = Vec::with_capacity(capacity);
-        keys.resize(capacity, None);
-
-        let mut values : Vec<Option<isize>> = Vec::with_capacity(capacity);
-        values.resize(capacity, None);
+        let mut key_value_pairs : Vec<Option<Entry<'a>>> = Vec::with_capacity(capacity);
+        key_value_pairs.resize(capacity, None);
 
         HashTable 
         { 
             capacity: capacity, 
-            keys: keys,
-            values: values, 
+            key_value_pairs: key_value_pairs, 
             update_history: VecDeque::new() 
         }
     }
@@ -30,8 +52,7 @@ impl<'a> HashTable<'a>
     {
         let pos = self.hash_with_probe(key);
 
-        self.keys[pos] = Some(key);
-        self.values[pos] = Some(value);
+        self.key_value_pairs[pos] = Some(Entry::create(key, value));
 
         self.update_history.retain(|(present_key, _)| *present_key != key);
         self.update_history.push_back((key, value));
@@ -41,28 +62,26 @@ impl<'a> HashTable<'a>
     {
         let mut hash_pos : usize = self.hash_with_probe(key);
 
-        if let None = self.keys[hash_pos]
+        if let None = self.key_value_pairs[hash_pos]
         {
             return;
         }
         else 
         {
-            self.keys[hash_pos] = None;
-            self.values[hash_pos] = None;
+            self.key_value_pairs[hash_pos] = None;
         }
 
         let mut current_pos = hash_pos + 1;
         current_pos = current_pos % self.capacity;
 
-        while let Some(present_key) = self.keys[current_pos]
+        while let Some(present_entry) = &self.key_value_pairs[current_pos]
         {
+            let present_key = present_entry.get_key();
+            let present_value = present_entry.get_value();
             if self.hash_with_probe(present_key) <= hash_pos
             {   
-                self.keys[hash_pos] = Some(present_key);
-                self.values[hash_pos] = self.values[current_pos];
-
-                self.keys[current_pos] = None;
-                self.values[current_pos] = None;
+                self.key_value_pairs[hash_pos] = Some(Entry::create(present_key, present_value));
+                self.key_value_pairs[current_pos] = None;
 
                 hash_pos = current_pos;
             }
@@ -76,7 +95,9 @@ impl<'a> HashTable<'a>
     pub fn get(&self, key: &'a str) -> Option<isize>
     {
         let pos = self.hash_with_probe(key);
-        self.values[pos]
+        self.key_value_pairs[pos]
+            .as_ref()
+            .and_then(|entry| Some(entry.get_value()))
     }
 
     pub fn get_last(&self) -> Option<&(&'a str, isize)> 
@@ -104,7 +125,7 @@ impl<'a> HashTable<'a>
     fn hash_with_probe(&self, key: &str) -> usize
     {
         let mut pos : usize = self.hash(key);
-        while let Some(present_key) = self.keys[pos] && present_key != key
+        while let Some(present_entry) = &self.key_value_pairs[pos] && present_entry.get_key() != key
         {
             pos = pos + 1;
             pos = pos % self.capacity;
@@ -125,13 +146,13 @@ mod tests {
 
         hash_table.insert("word", 1);
 
-        assert_eq!(hash_table.keys[hash_table.hash_with_probe("word")], Some("word"));
-        assert_eq!(hash_table.values[hash_table.hash_with_probe("word")], Some(1));
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_key(), "word");
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_value(), 1);
 
         hash_table.insert("word", 2);
 
-        assert_eq!(hash_table.keys[hash_table.hash_with_probe("word")], Some("word"));
-        assert_eq!(hash_table.values[hash_table.hash_with_probe("word")], Some(2));
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_key(), "word");
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_value(), 2);
     }
 
     #[test]
@@ -160,13 +181,13 @@ mod tests {
 
         let key1 = hash_table.hash_with_probe("aaab");
 
-        assert_eq!(hash_table.keys[key1], Some("aaab"));
-        assert_eq!(hash_table.keys[(key1 + 1) % 5], Some("aaba"));
-        assert_eq!(hash_table.keys[(key1 + 2) % 5], Some("abaa"));
+        assert_eq!(hash_table.key_value_pairs[key1].as_ref().unwrap().get_key(), "aaab");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 1) % 5].as_ref().unwrap().get_key(), "aaba");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 2) % 5].as_ref().unwrap().get_key(), "abaa");
 
-        assert_eq!(hash_table.values[key1], Some(1));
-        assert_eq!(hash_table.values[(key1 + 1) % 5], Some(2));
-        assert_eq!(hash_table.values[(key1 + 2) % 5], Some(3));
+        assert_eq!(hash_table.key_value_pairs[key1].as_ref().unwrap().get_value(), 1);
+        assert_eq!(hash_table.key_value_pairs[(key1 + 1) % 5].as_ref().unwrap().get_value(), 2);
+        assert_eq!(hash_table.key_value_pairs[(key1 + 2) % 5].as_ref().unwrap().get_value(), 3);
     }
 
     #[test]
@@ -176,18 +197,16 @@ mod tests {
 
         hash_table.insert("word", 1);
 
-        assert_eq!(hash_table.keys[hash_table.hash_with_probe("word")], Some("word"));
-        assert_eq!(hash_table.values[hash_table.hash_with_probe("word")], Some(1));
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_key(), "word");
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")].as_ref().unwrap().get_value(), 1);
 
         hash_table.remove("word");
 
-        assert_eq!(hash_table.keys[hash_table.hash_with_probe("word")], None);
-        assert_eq!(hash_table.values[hash_table.hash_with_probe("word")], None);
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")], None);
 
         hash_table.remove("word");
 
-        assert_eq!(hash_table.keys[hash_table.hash_with_probe("word")], None);
-        assert_eq!(hash_table.values[hash_table.hash_with_probe("word")], None);
+        assert_eq!(hash_table.key_value_pairs[hash_table.hash_with_probe("word")], None);
     }
 
     #[test]
@@ -202,24 +221,26 @@ mod tests {
 
         let key1 = hash_table.hash_with_probe("aaab");
 
-        assert_eq!(hash_table.keys[key1], Some("aaab"));
-        assert_eq!(hash_table.keys[(key1 + 1) % 5], Some("aaba"));
-        assert_eq!(hash_table.keys[(key1 + 2) % 5], Some("abaa"));
-        assert_eq!(hash_table.keys[(key1 + 3) % 5], Some("baaa"));
+        assert_eq!(hash_table.key_value_pairs[key1].as_ref().unwrap().get_key(), "aaab");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 1) % 5].as_ref().unwrap().get_key(), "aaba");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 2) % 5].as_ref().unwrap().get_key(), "abaa");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 3) % 5].as_ref().unwrap().get_key(), "baaa");
 
         hash_table.remove("aaba");
 
-        assert_eq!(hash_table.keys[key1], Some("aaab"));
-        assert_eq!(hash_table.keys[(key1 + 1) % 5], Some("abaa"));
-        assert_eq!(hash_table.keys[(key1 + 2) % 5], Some("baaa"));
-        assert_eq!(hash_table.keys[(key1 + 3) % 5], None);
+        assert_eq!(hash_table.key_value_pairs[key1].as_ref().unwrap().get_key(), "aaab");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 1) % 5].as_ref().unwrap().get_key(), "abaa");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 2) % 5].as_ref().unwrap().get_key(), "baaa");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 3) % 5], None);
+
 
         hash_table.remove("aaab");
 
-        assert_eq!(hash_table.keys[key1], Some("abaa"));
-        assert_eq!(hash_table.keys[(key1 + 1) % 5], Some("baaa"));
-        assert_eq!(hash_table.keys[(key1 + 2) % 5], None);
-        assert_eq!(hash_table.keys[(key1 + 3) % 5], None);
+        assert_eq!(hash_table.key_value_pairs[key1].as_ref().unwrap().get_key(), "abaa");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 1) % 5].as_ref().unwrap().get_key(), "baaa");
+        assert_eq!(hash_table.key_value_pairs[(key1 + 2) % 5], None);
+        assert_eq!(hash_table.key_value_pairs[(key1 + 3) % 5], None);
+
     }
 
     #[test]
