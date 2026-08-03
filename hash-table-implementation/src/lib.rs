@@ -3,14 +3,14 @@ use reqwest;
 mod hash_table;
 
 pub fn run() -> () {
-    let _words = extract_words_from_txt_file("https://www.gutenberg.org/files/98/98-0.txt");
+    let words = extract_words_from_txt_file("https://www.gutenberg.org/files/98/98-0.txt");
 
-    let mut hash_table = hash_table::HashTable::new(130000);
-    hash_table.insert("test1", 1);
-    hash_table.insert("test2", 2);
-    hash_table.insert("test3", -3);
+    let mut hash_table = hash_table::HashTable::new(140000);
+    hash_table.insert(&words[0], 1);
+    hash_table.insert(&words[1], 2);
+    hash_table.insert(&words[2], -3);
 
-    let value_test1 = hash_table.get("test1");
+    let value_test1 = hash_table.get(&words[0]);
     println!("{:?}", value_test1);
 
     let last_value = hash_table.get_last();
@@ -19,19 +19,18 @@ pub fn run() -> () {
     println!("{:?}", last_value);
     println!("{:?}", first_value);
 
-    hash_table.remove("test2");
-    let value_test3 = hash_table.get("test3");
+    hash_table.remove(&words[1]);
+    let value_test3 = hash_table.get(&words[2]);
 
     println!("{:?}", value_test3);
 
-    let value_test2 = hash_table.get("test2");
+    let value_test2 = hash_table.get(&words[1]);
     println!("{:?}", value_test2);
 }
 
 // TODO: add unit tests for word extraction
 // TODO: add error handling
 // TODO: reduce the amount of allocations
-// TODO: determine how to remove the apostrophe character (') correctly.
 
 fn extract_words_from_txt_file(url: &str) -> Vec<String>
 {
@@ -49,8 +48,6 @@ fn extract_words_from_txt_file(url: &str) -> Vec<String>
                                 .flatten()
                                 .filter(|word| !word.is_empty())
                                 .collect();
-
-    // println!("{:?}", words);
 
     words
 }
